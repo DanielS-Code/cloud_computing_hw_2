@@ -1,8 +1,8 @@
-GITHUB_URL = https://github.com/DanielS-Code/cloud_computing_hw_2
+GITHUB_URL = "https://github.com/DanielS-Code/cloud_computing_hw_2"
 KEY_NAME="CC-HW2-EC2-KEY"
 KEY_PAIR_FILE=$KEY_NAME".pem"
 SEC_GRP="CC_HW2_SEC_GRP"
-UBUNTU_AMI = ami-04aa66cdfe687d427
+UBUNTU_AMI = "ami-04aa66cdfe687d427"
 
 AMI_NAME="worker"
 IMG_TAG_KEY_1="service"
