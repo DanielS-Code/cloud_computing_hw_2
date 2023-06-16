@@ -169,7 +169,7 @@ function deploy_orchestrator() {
       printf "Install requirements\n"
       pip3 install -r "orchestrator/requirements.txt"
 
-      export FLASK_APP="orchestrator/app.py"
+      export FLASK_APP=orchestrator/app.py
       nohup flask run --host=0.0.0.0 &>/dev/null & exit
 EOF
 }
