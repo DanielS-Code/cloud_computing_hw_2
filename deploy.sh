@@ -3,12 +3,16 @@ KEY_NAME="CC_HW2_EC2_KEY"
 KEY_PAIR_FILE=$KEY_NAME".pem"
 SEC_GRP="CC_HW2_SEC_GRP"
 UBUNTU_AMI="ami-04aa66cdfe687d427"
+ROLE_NAME="EC2FullAccess"
 
 AMI_NAME="worker"
 IMG_TAG_KEY_1="service"
 IMG_TAG_VAL_1="dynamic-workload"
 
 PROJ_NAME="cloud_computing_hw_2"
+POLICY_PATH="file://EC2_Trust_Policy.json"
+
+ORCH_CONFIG="orchestrator/config.py"
 
 MY_IP=$(curl --silent ipinfo.io/ip)
 echo "PC_IP_ADDRESS: $MY_IP"
@@ -102,5 +106,76 @@ EOF
   aws ec2 terminate-instances --instance-ids $INSTANCE_ID
 }
 
+
+function deploy_orchestrator() {
+  echo "Create IAM Role" >&2
+  aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document $POLICY_PATH
+
+  echo "Attach a Policy with the Role" >&2
+  aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::aws:policy/AmazonEC2FullAccess
+
+  echo "Verify the policy assignment" >&2
+  aws iam create-instance-profile --instance-profile-name $ROLE_NAME
+
+  echo "Creating Ubuntu instance using"$AMI_ID >&2
+
+  RUN_INSTANCES=$(aws ec2 run-instances   \
+    --image-id $UBUNTU_AMI        \
+    --instance-type t2.micro            \
+    --key-name $KEY_NAME                \
+    --security-groups $SEC_GRP)
+
+  INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
+
+  echo "Waiting for instance creation...\n" >&2
+  aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+
+  ORCHESTRATOR_PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
+
+  echo "New instance $INSTANCE_ID @ $ORCHESTRATOR_PUBLIC_IP" >&2
+
+  aws iam add-role-to-instance-profile --role-name $ROLE_NAME --instance-profile-name $ROLE_NAME | tr -d '"'
+
+  echo "Associate IAM role to instance" >&2
+  aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=$ROLE_NAME | tr -d '"'
+
+  echo "New end point - $INSTANCE_ID @ $ORCHESTRATOR_PUBLIC_IP" >&2
+
+  echo "Deploy orchestrator" >&2
+
+#  ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
+
+      printf "update apt get\n"
+      sudo apt-get update -y
+
+      printf "upgrade apt get\n"
+      sudo apt-get upgrade -y
+
+      printf "update apt get x2\n"
+      sudo apt-get update -y
+
+      printf "install pip\n"
+      sudo apt-get install python3-pip -y
+
+      printf "Clone repo\n"
+      git clone "$GITHUB_URL.git"
+            git clone "https://github.com/DanielS-Code/cloud_computing_hw_2.git"
+
+      cd $PROJ_NAME
+
+      echo WORKER_AMI_ID = "'$WORKER_AMI_ID'" >> $ORCH_CONFIG
+      echo orchestrator_public_ip = "'$ORCHESTRATOR_PUBLIC_IP'" >> $ORCH_CONFIG
+      echo USER_REGION = "'$USER_REGION'" >> $ORCH_CONFIG
+
+      printf "Install requirements\n"
+      pip3 install -r "orchestrator/requirements.txt"
+
+      export FLASK_APP="orchestrator/app.py"
+      nohup flask run --host=0.0.0.0 &>/dev/null & exit
+EOF
+}
+
 deploy_worker_image
 echo "Worker AMI ID:"$WORKER_AMI_ID
+deploy_orchestrator
+echo "Orchestrator Public IP:"$ORCHESTRATOR_PUBLIC_IP
