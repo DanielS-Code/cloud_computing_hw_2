@@ -8,6 +8,8 @@ AMI_NAME="worker"
 IMG_TAG_KEY_1="service"
 IMG_TAG_VAL_1="dynamic-workload"
 
+PROJ_NAME="cloud_computing_hw_2"
+
 MY_IP=$(curl --silent ipinfo.io/ip)
 echo "PC_IP_ADDRESS: $MY_IP"
 
@@ -44,7 +46,7 @@ function deploy_worker_image() {
     return
   fi
 
-  echo "Creating Ubuntu 22.04 instance using %s...\n" "$AMI_ID" >&2
+  echo "Creating Ubuntu instance using"$AMI_ID >&2
 
   RUN_INSTANCES=$(aws ec2 run-instances   \
     --image-id $UBUNTU_AMI          \
@@ -61,9 +63,9 @@ function deploy_worker_image() {
 
   echo "New instance $INSTANCE_ID @ $PUBLIC_IP" >&2
 
-  echo "Deploy app" >&2
+  echo "Deploy worker" >&2
 
-  ssh -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500" -i $KEY_PAIR_FILE ubuntu@$PUBLIC_IP << EOF
+  ssh -i $KEY_PAIR_FILE ubuntu@$PUBLIC_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
       printf "update apt get\n"
       sudo apt-get update -y
 
@@ -86,7 +88,7 @@ EOF
 
 
   echo "Creating new image" >&2
-  $WORKER_AMI_ID=$(aws ec2 create-image --instance-id $INSTANCE_ID \
+  WORKER_AMI_ID=$(aws ec2 create-image --instance-id $INSTANCE_ID \
                   --name $AMI_NAME \
                   --tag-specifications ResourceType=image,Tags="[{Key=$IMG_TAG_KEY_1,Value=$IMG_TAG_VAL_1}]" \
                   --description "An AMI for workers in hash cluster" \
@@ -94,8 +96,9 @@ EOF
                   --query ImageId --output text)
 
   echo "Waiting for image creation" >&2
-  aws ec2 wait image-available --image-ids $IMAGE_ID
+  aws ec2 wait image-available --image-ids $WORKER_AMI_ID
 
+  echo "Termination instance" >&2
   aws ec2 terminate-instances --instance-ids $INSTANCE_ID
 }
 
