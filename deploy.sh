@@ -143,7 +143,7 @@ function deploy_orchestrator() {
 
   echo "Deploy orchestrator" >&2
 
-#  ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
+  ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
 
       printf "update apt get\n"
       sudo apt-get update -y
@@ -159,12 +159,11 @@ function deploy_orchestrator() {
 
       printf "Clone repo\n"
       git clone "$GITHUB_URL.git"
-            git clone "https://github.com/DanielS-Code/cloud_computing_hw_2.git"
 
       cd $PROJ_NAME
 
       echo WORKER_AMI_ID = "'$WORKER_AMI_ID'" >> $ORCH_CONFIG
-      echo orchestrator_public_ip = "'$ORCHESTRATOR_PUBLIC_IP'" >> $ORCH_CONFIG
+      echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $ORCH_CONFIG
       echo USER_REGION = "'$USER_REGION'" >> $ORCH_CONFIG
 
       printf "Install requirements\n"
