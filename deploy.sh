@@ -18,7 +18,7 @@ aws ec2 create-key-pair \
     --key-format pem \
     --query "KeyMaterial" \
     --output text > $KEY_PAIR_FILE
-chmod 400 $KEY_PAIR_FI0LE
+chmod 400 $KEY_PAIR_FILE
 
 USER_REGION=$(aws configure get region --output text)
 
@@ -53,7 +53,7 @@ function deploy_worker_image() {
   INSTANCE_ID=$(echo "$RUN_INSTANCES" | jq -r '.Instances[0].InstanceId')
 
   echo "Waiting for instance creation..."
-  aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+  aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
   PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
 
