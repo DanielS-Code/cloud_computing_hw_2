@@ -1,5 +1,5 @@
 GITHUB_URL="https://github.com/DanielS-Code/cloud_computing_hw_2"
-KEY_NAME="CC-HW2-EC2-KEY"
+KEY_NAME="CC_HW2_EC2_KEY"
 KEY_PAIR_FILE=$KEY_NAME".pem"
 SEC_GRP="CC_HW2_SEC_GRP"
 UBUNTU_AMI="ami-04aa66cdfe687d427"
@@ -35,14 +35,16 @@ aws ec2 authorize-security-group-ingress        \
     --cidr $MY_IP/32 | tr -d '"'
 
 function deploy_worker_image() {
-  IMAGE_ID=$(aws ec2 describe-images --owners self --filters "Name=tag:$IMG_TAG_KEY_1,Values=[$IMG_TAG_VAL_1]" "Name=name, Values=[$AMI_NAME]" | jq --raw-output '.Images[] | .ImageId')
+  echo "Creating worker image" >&2
 
-  if [[ $IMAGE_ID ]]
+  WORKER_AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=tag:$IMG_TAG_KEY_1,Values=[$IMG_TAG_VAL_1]" "Name=name, Values=[$AMI_NAME]" | jq --raw-output '.Images[] | .ImageId')
+
+  if [[ $WORKER_AMI_ID ]]
   then
-    return $IMAGE_ID
+    return
   fi
 
-  printf "Creating Ubuntu 22.04 instance using %s...\n" "$AMI_ID"
+  echo "Creating Ubuntu 22.04 instance using %s...\n" "$AMI_ID" >&2
 
   RUN_INSTANCES=$(aws ec2 run-instances   \
     --image-id $UBUNTU_AMI          \
@@ -52,14 +54,14 @@ function deploy_worker_image() {
 
   INSTANCE_ID=$(echo "$RUN_INSTANCES" | jq -r '.Instances[0].InstanceId')
 
-  echo "Waiting for instance creation..."
+  echo "Waiting for instance creation..." >&2
   aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
   PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
 
-  echo "New instance $INSTANCE_ID @ $PUBLIC_IP"
+  echo "New instance $INSTANCE_ID @ $PUBLIC_IP" >&2
 
-  echo "Deploy app"
+  echo "Deploy app" >&2
 
   ssh -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500" -i $KEY_PAIR_FILE ubuntu@$PUBLIC_IP << EOF
       printf "update apt get\n"
@@ -83,21 +85,19 @@ function deploy_worker_image() {
 EOF
 
 
-  echo "Creating new image"
-  IMAGE_ID=$(aws ec2 create-image --instance-id $INSTANCE_ID \
-        --name $AMI_NAME \
-        --tag-specifications ResourceType=image,Tags="[{Key=$IMG_TAG_KEY_1,Value=$IMG_TAG_VAL_1}]" \
-        --description "An AMI for workers in hash cluster" \
-        --region $USER_REGION \
-        --query ImageId --output text)
+  echo "Creating new image" >&2
+  $WORKER_AMI_ID=$(aws ec2 create-image --instance-id $INSTANCE_ID \
+                  --name $AMI_NAME \
+                  --tag-specifications ResourceType=image,Tags="[{Key=$IMG_TAG_KEY_1,Value=$IMG_TAG_VAL_1}]" \
+                  --description "An AMI for workers in hash cluster" \
+                  --region $USER_REGION \
+                  --query ImageId --output text)
 
-  echo "Waiting for image creation"
+  echo "Waiting for image creation" >&2
   aws ec2 wait image-available --image-ids $IMAGE_ID
 
   aws ec2 terminate-instances --instance-ids $INSTANCE_ID
-
-  return $IMAGE_ID
 }
 
-WORKER_AMI_ID=$(deploy_worker_image)
-echo "Worker AMI ID: $WORKER_AMI_ID"
+deploy_worker_image
+echo "Worker AMI ID:"$WORKER_AMI_ID
