@@ -37,8 +37,8 @@ aws ec2 authorize-security-group-ingress        \
     --cidr $MY_IP/32 | tr -d '"'
 
 aws ec2 authorize-security-group-ingress        \
-    --group-name $SEC_GRP --port 5000 --protocol tcp \
-    --cidr $MY_IP/32 | tr -d '"'
+    --group-name "$SEC_GRP" --port 5000 --protocol tcp \
+    --cidr 0.0.0.0/0 | tr -d '"'
 
 ### Deploy Worker Image ###
 
@@ -169,7 +169,7 @@ ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=n
     printf "Install requirements\n"
     pip3 install -r "orchestrator/requirements.txt"
 
-    export FLASK_APP=orchestrator/app.py
+    export FLASK_APP="orchestrator/app.py"
     nohup flask run --host=0.0.0.0 &>flask.log & exit
 EOF
 
