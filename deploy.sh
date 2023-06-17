@@ -13,6 +13,7 @@ PROJ_NAME="cloud_computing_hw_2"
 POLICY_PATH="file://EC2_Trust_Policy.json"
 
 ORCH_CONFIG="orchestrator/config.py"
+API_CONFIG="api/config.py"
 
 MY_IP=$(curl --silent ipinfo.io/ip)
 echo "PC_IP_ADDRESS: $MY_IP"
@@ -174,3 +175,51 @@ ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=n
 EOF
 
 echo "Orchestrator Public IP:"$ORCHESTRATOR_PUBLIC_IP
+
+### Deploy API 1 ###
+
+echo "Creating api"
+
+RUN_INSTANCES=$(aws ec2 run-instances   \
+  --image-id $UBUNTU_AMI                \
+  --instance-type t2.micro              \
+  --key-name $KEY_NAME                  \
+  --security-groups $SEC_GRP)
+
+INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
+
+echo "Waiting for instance creation..."
+aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+
+API_1_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
+
+echo "New instance %s @ %s \n" "$INSTANCE_ID" "API_1_IP"
+
+printf "Deploy app"
+ssh -i "$KEY_PEM" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@"$API_1_IP" <<EOF
+    echo "update apt get"
+    sudo apt-get update -y
+
+    echo "upgrade apt get"
+    sudo apt-get upgrade -y
+
+    echo "update apt get x2"
+    sudo apt-get update -y
+
+    echo "install pip"
+    sudo apt-get install python3-pip -y
+
+    echo "Clone repo"
+    git clone "$GITHUB_URL.git"
+    cd $PROJ_NAME
+
+    echo "Install requirements"
+    pip3 install -r "api/requirements.txt"
+
+    echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $API_CONFIG
+
+    export FLASK_APP="api/app.py"
+    nohup flask run --host=0.0.0.0 &>/dev/null & exit
+EOF
+
+echo "API 1 is up at: $API_1_IP"
