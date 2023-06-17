@@ -127,7 +127,7 @@ RUN_INSTANCES=$(aws ec2 run-instances   \
 
 INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
 
-echo "Waiting for instance creation..."
+echo "Waiting for orchestrator creation"
 aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
 ORCHESTRATOR_PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
