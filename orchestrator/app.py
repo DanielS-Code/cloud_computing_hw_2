@@ -8,7 +8,7 @@ import boto3
 from config import MAX_TIME_IN_QUEUE, PERIODIC_ITERATION, INSTANCE_TYPE, WORKER_AMI_ID, ORCHESTRATOR_IP, USER_REGION
 import logging
 
-logging.basicConfig(filename='orchestrator.log',
+logging.basicConfig(filename='orchestrator/orchestrator.log',
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
