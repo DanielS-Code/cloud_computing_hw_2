@@ -14,7 +14,7 @@ logging.basicConfig(filename='orchestrator/orchestrator.log',
                     datefmt='%H:%M:%S',
                     level=logging.DEBUG)
 
-SEC_GRP="CC_HW2_SEC_GRP"
+SEC_GRP = "CC_HW2_SEC_GRP"
 
 app = Flask(__name__)
 work_queue = []
@@ -47,12 +47,12 @@ def get_result():
 
 def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
     user_data = f"""#!/bin/bash
-                   cd cloud_computing_hw_2
-                   git pull
-                   echo ORCHESTRATOR_IP = \\\"{ORCHESTRATOR_IP}\\\" >> worker/config.py
-                   echo EXIT_FLAG = {exit_flag} >> worker/config.py
-                   python3 {app_path}
-                """
+    cd cloud_computing_hw_2
+    echo test >> test.txt
+    git pull
+    echo ORCHESTRATOR_IP = \\\"{ORCHESTRATOR_IP}\\\" >> worker/config.py
+    echo EXIT_FLAG = {exit_flag} >> worker/config.py
+    python3 {app_path}"""
     logging.info(f'User data: {user_data}')
     client = boto3.client('ec2', region_name=USER_REGION)
     response = client.run_instances(ImageId=WORKER_AMI_ID, InstanceType=INSTANCE_TYPE, MaxCount=max_count,
