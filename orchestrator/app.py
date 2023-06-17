@@ -82,7 +82,7 @@ def add_job_to_queue():
     entry_time_utc = datetime.utcnow()
     job_id = uuid.uuid4().int
     work_queue.append({
-        "job_id": uuid.uuid4().int,
+        "job_id": job_id,
         "entry_time_utc": entry_time_utc,
         "iterations": int(request.args.get("iterations")),
         "file": request.get_data()})
