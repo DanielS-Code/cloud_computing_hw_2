@@ -47,7 +47,7 @@ def get_result():
 
 def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
     user_data = f"""#!/bin/bash
-    cd cloud_computing_hw_2
+    cd ~/cloud_computing_hw_2
     echo test >> test.txt
     git pull
     echo ORCHESTRATOR_IP = \\\"{ORCHESTRATOR_IP}\\\" >> worker/config.py
