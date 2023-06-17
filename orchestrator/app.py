@@ -31,18 +31,16 @@ def test():
 
 @app.route('/pullCompleted', methods=['POST'])
 def pullCompleted():
-    if request.method == "POST":
-        top = int(request.args.get('top'))
-        slice_index = min(top, len(result_list))
-        return Response(mimetype='application/json',
-                        response=json.dumps({"result": result_list[:slice_index]}),
-                        status=200)
+    top = int(request.args.get('top'))
+    slice_index = min(top, len(result_list))
+    return Response(mimetype='application/json',
+                    response=json.dumps({"result": result_list[:slice_index]}),
+                    status=200)
 
 
-@app.route('/get_result', methods=['PUT'])
+@app.route('/publishComplete', methods=['PUT'])
 def get_result():
-    if request.method == "PUT":
-        result_list.append({"job_id": request.json["job_id"], "result": request.json["result"]})
+    result_list.append({"job_id": request.json["job_id"], "result": request.json["result"]})
 
 
 def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
@@ -81,14 +79,15 @@ def scale_up():
 
 @app.route('/addJob', methods=['PUT'])
 def add_job_to_queue():
-    if request.method == "PUT":
-        entry_time_utc = datetime.utcnow()
-        work_queue.append({
-            "job_id": uuid.uuid4().int,
-            "entry_time_utc": entry_time_utc,
-            "iterations": int(request.args.get("iterations")),
-            "file": request.get_data()})
-    return Response(status=200)
+    entry_time_utc = datetime.utcnow()
+    job_id = uuid.uuid4().int
+    work_queue.append({
+        "job_id": uuid.uuid4().int,
+        "entry_time_utc": entry_time_utc,
+        "iterations": int(request.args.get("iterations")),
+        "file": request.get_data()})
+    return Response(response=json.dumps({'job_id': job_id}),
+                    status=200)
 
 
 @app.route('/get_work', methods=['GET'])

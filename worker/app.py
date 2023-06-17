@@ -33,7 +33,7 @@ def main():
         work = request.json()
         if work:
             res = do_work(work["file"], work["iterations"])
-            requests.put(f"http://{ORCHESTRATOR_IP}:{PORT}/get_result", headers=headers,
+            requests.put(f"http://{ORCHESTRATOR_IP}:{PORT}/publishComplete", headers=headers,
                          json={"job_id": work["job_id"], "result": str(res)})
             start_time = datetime.utcnow()
         else:
