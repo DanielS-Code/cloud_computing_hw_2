@@ -5,6 +5,13 @@ from ec2_metadata import ec2_metadata
 import os
 from config import ORCHESTRATOR_IP, TIME_OUT, PORT, EXIT_FLAG
 from datetime import datetime
+import logging
+
+logging.basicConfig(filename='worker/worker.log',
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 
 headers = {"Content-Type": "application/json", 'Accept': 'application/json'}
 
@@ -21,6 +28,7 @@ def main():
     start_time = datetime.utcnow()
     while True:
         dif = datetime.utcnow() - start_time
+        logging.info("Checking for available work")
         request = requests.get(f'http://{ORCHESTRATOR_IP}:{PORT}/get_work')
         work = request.json()
         if work:

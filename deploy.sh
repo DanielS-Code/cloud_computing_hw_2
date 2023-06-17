@@ -103,7 +103,7 @@ EOF
   aws ec2 wait image-available --image-ids $WORKER_AMI_ID
 
   echo "Termination instance" >&2
-  aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+  aws ec2 terminate-instances --instance-ids $INSTANCE_ID | tr -d '"'
 }
 
 
