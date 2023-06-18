@@ -65,7 +65,7 @@ def get_top_k_complete_jobs():
     last_top_completed = memory.completed[:min(top, len(memory.completed))]
     response = [completed_job.to_dict() for completed_job in last_top_completed]
     return Response(mimetype='application/json',
-                    response=json.dumps(response),
+                    response=json.dumps(response, default=str),
                     status=200)
 
 
