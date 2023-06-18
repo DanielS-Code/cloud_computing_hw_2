@@ -84,7 +84,7 @@ def append_completed_job():
 def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
     user_data = f"""#!/bin/bash
     cd /home/ubuntu/cloud_computing_hw_2
-    git pull > test.txt
+    git pull > pull.log
     echo ORCHESTRATOR_IP = \\\"{ORCHESTRATOR_IP}\\\" >> worker/config.py
     echo EXIT_FLAG = {exit_flag} >> worker/config.py
     export PATH=/usr/local/bin:$PATH
