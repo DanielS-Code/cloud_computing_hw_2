@@ -171,7 +171,7 @@ ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=n
     pip3 install -r "orchestrator/requirements.txt"
 
     export FLASK_APP="orchestrator/app.py"
-    nohup flask run --host=0.0.0.0 &>flask.log & exit
+    nohup flask run --host=0.0.0.0 &>deploy.log & exit
 EOF
 
 echo "Orchestrator Public IP:"$ORCHESTRATOR_PUBLIC_IP
@@ -220,7 +220,7 @@ ssh -i $KEY_PAIR_FILE ubuntu@$API_1_IP -o "StrictHostKeyChecking=no" -o "Connect
     echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $API_CONFIG
 
     export FLASK_APP="api/app.py"
-    nohup flask run --host=0.0.0.0 &>deploy.txt  & exit
+    nohup flask run --host=0.0.0.0 &>deploy.log  & exit
 EOF
 
 echo "API 1 is up at: $API_1_IP"

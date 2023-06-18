@@ -2,11 +2,10 @@ from flask import Flask, Response, request
 from dataclasses import dataclass
 from datetime import datetime
 import json
-import time
 import uuid
 import boto3
-from config import MAX_TIME_IN_QUEUE, PERIODIC_ITERATION, INSTANCE_TYPE, WORKER_AMI_ID, ORCHESTRATOR_IP, USER_REGION
-import threading
+from config import MAX_TIME_IN_QUEUE, INSTANCE_TYPE, WORKER_AMI_ID, ORCHESTRATOR_IP, USER_REGION
+import threading as th
 import logging
 
 logging.basicConfig(filename='orchestrator/orchestrator.log',
@@ -18,8 +17,6 @@ logging.basicConfig(filename='orchestrator/orchestrator.log',
 SEC_GRP = "CC_HW2_SEC_GRP"
 
 app = Flask(__name__)
-
-next_call = time.time()
 
 
 @dataclass
@@ -66,7 +63,7 @@ def get_top_k_complete_jobs():
                     status=200)
 
 
-@app.route('job/completed', methods=['PUT'])
+@app.route('/job/completed', methods=['PUT'])
 def append_completed_job():
     '''
     Append worker completed job to completed list
@@ -111,15 +108,15 @@ def get_work():
 
 @app.before_first_request
 def scale_up():
-    global next_call
-    lag = datetime.utcnow() - memory.queue[0].entry_time_utc
-    if memory.queue and lag > MAX_TIME_IN_QUEUE:
+    lag = 0
+    if memory.queue:
+        lag = datetime.utcnow() - memory.queue[0].entry_time_utc
+    if lag > MAX_TIME_IN_QUEUE:
         resource = boto3.resource('ec2', region_name=USER_REGION)
         response = deploy_worker('worker/app.py')
         instance = resource.Instance(id=response['Instances'][0]['InstanceId'])
         instance.wait_until_running()
-    next_call = next_call + PERIODIC_ITERATION
-    threading.Timer(next_call - time.time(), scale_up).start()
+    th.Timer(10.0, scale_up).start()
 
 
 deploy_worker('worker/app.py',
