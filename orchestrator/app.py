@@ -37,7 +37,7 @@ class CompletedJob:
     hash: str
 
     def to_dict(self):
-        return {'job_id': self.id, 'completed_at': self.completed_at, 'hash': hash}
+        return {'job_id': self.id, 'completed_at': self.completed_at, 'hash': self.hash}
 
 
 @dataclass
