@@ -87,6 +87,7 @@ def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
     git pull
     echo ORCHESTRATOR_IP = \\\"{ORCHESTRATOR_IP}\\\" >> worker/config.py
     echo EXIT_FLAG = {exit_flag} >> worker/config.py
+    export PATH=/usr/local/bin:$PATH
     python3 {app_path} >> run_test.txt"""
     logging.info(f'User data: {user_data}')
     client = boto3.client('ec2', region_name=USER_REGION)

@@ -170,8 +170,10 @@ ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=n
     printf "Install requirements\n"
     pip3 install -r "orchestrator/requirements.txt"
 
-    export FLASK_APP="orchestrator/app.py"
-    nohup flask run --host=0.0.0.0 &>deploy.log & exit
+    export FLASK_APP=orchestrator/app.py
+    export PATH=/home/ubuntu/.local/bin:$PATH
+    nohup flask run --host=0.0.0.0 &>/dev/null & exit
+
 EOF
 
 echo "Orchestrator Public IP:"$ORCHESTRATOR_PUBLIC_IP
