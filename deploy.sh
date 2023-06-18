@@ -222,6 +222,7 @@ ssh -i $KEY_PAIR_FILE ubuntu@$API_1_IP -o "StrictHostKeyChecking=no" -o "Connect
     echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $API_CONFIG
 
     export FLASK_APP="api/app.py"
+    export PATH=/home/ubuntu/.local/bin:$PATH
     nohup flask run --host=0.0.0.0 &>deploy.log  & exit
 EOF
 
