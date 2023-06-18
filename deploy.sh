@@ -229,50 +229,51 @@ EOF
 echo "API 1 is up at: $API_1_IP"
 
 ### Deploy API 2 ###
-#
-#echo "Creating API 2"
-#
-#RUN_INSTANCES=$(aws ec2 run-instances   \
-#  --image-id $UBUNTU_AMI                \
-#  --instance-type t2.micro              \
-#  --key-name $KEY_NAME                  \
-#  --security-groups $SEC_GRP)
-#
-#INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
-#
-#echo "Waiting for instance creation..."
-#aws ec2 wait instance-running --instance-ids $INSTANCE_ID
-#
-#API_2_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
-#
-#echo "New instance $INSTANCE_ID : $API_2_IP"
-#
-#printf "Deploy app"
-#
-#ssh -i $KEY_PAIR_FILE ubuntu@$API_2_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
-#    echo "update apt get"
-#    sudo apt-get update -y
-#
-#    echo "upgrade apt get"
-#    sudo apt-get upgrade -y
-#
-#    echo "update apt get x2"
-#    sudo apt-get update -y
-#
-#    echo "install pip"
-#    sudo apt-get install python3-pip -y
-#
-#    echo "Clone repo"
-#    git clone "$GITHUB_URL.git"
-#    cd $PROJ_NAME
-#
-#    echo "Install requirements"
-#    pip3 install -r "api/requirements.txt"
-#
-#    echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $API_CONFIG
-#
-#    export FLASK_APP="api/app.py"
-#    nohup flask run --host=0.0.0.0 &>deploy.txt  & exit
-#EOF
-#
-#echo "API 2 is up at: $API_2_IP"
+
+echo "Creating api 2"
+
+RUN_INSTANCES=$(aws ec2 run-instances   \
+  --image-id $UBUNTU_AMI                \
+  --instance-type t2.micro              \
+  --key-name $KEY_NAME                  \
+  --security-groups $SEC_GRP)
+
+INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
+
+echo "Waiting for instance creation..."
+aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+
+API_2_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
+
+echo "New instance $INSTANCE_ID : $API_2_IP"
+
+printf "Deploy app"
+
+ssh -i $KEY_PAIR_FILE ubuntu@$API_2_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
+    echo "update apt get"
+    sudo apt-get update -y
+
+    echo "upgrade apt get"
+    sudo apt-get upgrade -y
+
+    echo "update apt get x2"
+    sudo apt-get update -y
+
+    echo "install pip"
+    sudo apt-get install python3-pip -y
+
+    echo "Clone repo"
+    git clone "$GITHUB_URL.git"
+    cd $PROJ_NAME
+
+    echo "Install requirements"
+    pip3 install -r "api/requirements.txt"
+
+    echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $API_CONFIG
+
+    export FLASK_APP="api/app.py"
+    export PATH=/home/ubuntu/.local/bin:$PATH
+    nohup flask run --host=0.0.0.0 &>deploy.log  & exit
+EOF
+
+echo "API 2 is up at: $API_2_IP"
