@@ -26,12 +26,18 @@ class Job:
     iterations: int
     data: str
 
+    def to_dict(self):
+        return {"job_id": self.id, "iterations": self.iterations, "data": self.data}
+
 
 @dataclass
 class CompletedJob:
     id: int
     completed_at: datetime
     hash: str
+
+    def to_dict(self):
+        return {'job_id': self.id, 'completed_at': self.completed_at, 'hash': hash}
 
 
 @dataclass
@@ -57,7 +63,7 @@ def enqueue_new_job():
 def get_top_k_complete_jobs():
     top = int(request.args.get('top'))
     last_top_completed = memory.completed[:min(top, len(memory.completed))]
-    response = [vars(completed_job) for completed_job in last_top_completed]
+    response = [completed_job.to_dict() for completed_job in last_top_completed]
     return Response(mimetype='application/json',
                     response=json.dumps(response),
                     status=200)
@@ -72,6 +78,7 @@ def append_completed_job():
                                  completed_at=datetime.now(),
                                  hash=request.json['result'])
     memory.completed.append(completed_job)
+    return Response(status=200)
 
 
 def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
@@ -98,11 +105,8 @@ def get_work():
                         response=json.dumps({}),
                         status=200)
     job = memory.queue.pop(0)
-    response = {"job_id": job.id,
-                "iterations": job.iterations,
-                "data": job.data}
     return Response(mimetype='application/json',
-                    response=json.dumps(response),
+                    response=json.dumps(job.to_dict()),
                     status=200)
 
 
