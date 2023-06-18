@@ -1,11 +1,12 @@
 from flask import Flask, Response, request
+from dataclasses import dataclass
 from datetime import datetime
 import json
-import threading
 import time
 import uuid
 import boto3
 from config import MAX_TIME_IN_QUEUE, PERIODIC_ITERATION, INSTANCE_TYPE, WORKER_AMI_ID, ORCHESTRATOR_IP, USER_REGION
+import threading
 import logging
 
 logging.basicConfig(filename='orchestrator/orchestrator.log',
@@ -17,30 +18,63 @@ logging.basicConfig(filename='orchestrator/orchestrator.log',
 SEC_GRP = "CC_HW2_SEC_GRP"
 
 app = Flask(__name__)
-work_queue = []
-result_list = []
+
 next_call = time.time()
 
 
-@app.route('/test', methods=['GET'])
-def test():
-    return Response(mimetype='application/json',
-                    response=json.dumps({"result": "test"}),
-                    status=200)
+@dataclass
+class Job:
+    id: int
+    entry_time_utc: datetime
+    iterations: int
+    data: str
 
 
-@app.route('/pullCompleted', methods=['POST'])
-def pullCompleted():
+@dataclass
+class CompletedJob:
+    id: int
+    completed_at: datetime
+    hash: str
+
+
+@dataclass
+class Memory:
+    queue: list[Job]
+    completed: list[CompletedJob]
+
+
+memory = Memory([], [])
+
+
+@app.route('/job/enqueue', methods=['PUT'])
+def enqueue_new_job():
+    entry_time_utc = datetime.utcnow()
+    job_id = uuid.uuid4().int
+    iterations = int(request.args.get("iterations"))
+    data = str(request.get_data())
+    memory.queue.append(Job(id=job_id, entry_time_utc=entry_time_utc, iterations=iterations, data=data))
+    return Response(response=json.dumps({'job_id': job_id}), status=200)
+
+
+@app.route('/job/completed', methods=['POST'])
+def get_top_k_complete_jobs():
     top = int(request.args.get('top'))
-    slice_index = min(top, len(result_list))
+    last_top_completed = memory.completed[:min(top, len(memory.completed))]
+    response = [vars(completed_job) for completed_job in last_top_completed]
     return Response(mimetype='application/json',
-                    response=json.dumps({"result": result_list[:slice_index]}),
+                    response=json.dumps(response),
                     status=200)
 
 
-@app.route('/publishComplete', methods=['PUT'])
-def get_result():
-    result_list.append({"job_id": request.json["job_id"], "result": request.json["result"]})
+@app.route('job/completed', methods=['PUT'])
+def append_completed_job():
+    '''
+    Append worker completed job to completed list
+    '''
+    completed_job = CompletedJob(id=int(request.json['job_id']),
+                                 completed_at=datetime.now(),
+                                 hash=request.json['result'])
+    memory.completed.append(completed_job)
 
 
 def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
@@ -59,55 +93,33 @@ def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
     return response
 
 
-def check_time_first_in_line():
-    dif = datetime.utcnow() - work_queue[0]["entry_time_utc"]
-    return dif.seconds
+@app.route('/job/consume', methods=['GET'])
+def get_work():
+    logging.info("Get work called")
+    if not memory.queue:
+        return Response(mimetype='application/json',
+                        response=json.dumps({}),
+                        status=200)
+    job = memory.queue.pop(0)
+    response = {"job_id": job.id,
+                "iterations": job.iterations,
+                "data": job.data}
+    return Response(mimetype='application/json',
+                    response=json.dumps(response),
+                    status=200)
 
 
 @app.before_first_request
 def scale_up():
     global next_call
-
-    if work_queue and check_time_first_in_line() > MAX_TIME_IN_QUEUE:
+    lag = datetime.utcnow() - memory.queue[0].entry_time_utc
+    if memory.queue and lag > MAX_TIME_IN_QUEUE:
         resource = boto3.resource('ec2', region_name=USER_REGION)
         response = deploy_worker('worker/app.py')
         instance = resource.Instance(id=response['Instances'][0]['InstanceId'])
         instance.wait_until_running()
     next_call = next_call + PERIODIC_ITERATION
     threading.Timer(next_call - time.time(), scale_up).start()
-
-
-@app.route('/addJob', methods=['PUT'])
-def add_job_to_queue():
-    entry_time_utc = datetime.utcnow()
-    job_id = uuid.uuid4().int
-    work_queue.append({
-        "job_id": job_id,
-        "entry_time_utc": entry_time_utc,
-        "iterations": int(request.args.get("iterations")),
-        "file": request.get_data()})
-    return Response(response=json.dumps({'job_id': job_id}),
-                    status=200)
-
-
-@app.route('/get_work', methods=['GET'])
-def get_work():
-    logging.info("Get work called")
-    if request.method == "GET":
-        if not work_queue:
-            return Response(mimetype='application/json',
-                            response=json.dumps({}),
-                            status=200)
-        else:
-            job = work_queue[0]
-            del work_queue[0]
-
-            return Response(mimetype='application/json',
-                            response=json.dumps({"job_id": job["job_id"],
-                                                 "iterations": job["iterations"],
-                                                 "file": str(job["file"]),
-                                                 }),
-                            status=200)
 
 
 deploy_worker('worker/app.py',
