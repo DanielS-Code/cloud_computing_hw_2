@@ -20,6 +20,7 @@ Our architecture contains 3 services:
 2 running instances responsible to transfer request from user to orchestrator service.
 
 ####Endpoints:
+
 **/enqueue?iterations=num (PUT)**
 
 Send data to be processed by server.
@@ -61,6 +62,7 @@ Example Response:
 Processes all requests and scales workers to manage API load. MAX_TIME_IN_QUEUE - configures the maximal amount of time allowed to keep jobs in queue before scaling up.
 
 ####Endpoints:
+
 **/job/enqueue (PUT)** - Add new job to work queue.
 
 **/job/completed (GET)** - return the latest completed work items.
@@ -70,6 +72,7 @@ Processes all requests and scales workers to manage API load. MAX_TIME_IN_QUEUE 
 **/job/consume (GET)** - Consume job from queue to be processed.
 
 ###Worker Service
+
 
 This is the component responsible for the job itself. When we scale up the number of workers we can process more parallel jobs.
 The workers consume jobs, process them and send the result to orchestration service.
