@@ -1,4 +1,3 @@
-% Document Title
 
 # Cloud Computing Exe2 - Dynamic Workload
 
