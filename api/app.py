@@ -1,6 +1,6 @@
 from flask import Response, Flask, request
 import requests
-from config import ORCHESTRATOR_IP
+from config import QUEUE_IP
 import json
 import logging
 
@@ -15,7 +15,7 @@ app = Flask(__name__)
 @app.route('/enqueue', methods=['PUT'])
 def enqueue():
     iterations = int(request.args.get("iterations"))
-    response = requests.put(url=f"http://{ORCHESTRATOR_IP}:5000/job/enqueue?iterations={iterations}",
+    response = requests.put(url=f"http://{QUEUE_IP}:5000/job/enqueue?iterations={iterations}",
                             data=request.get_data())
     return Response(response=json.dumps(response.json()), status=200, mimetype='application/json')
 
@@ -23,7 +23,7 @@ def enqueue():
 @app.route('/pullCompleted', methods=['POST'])
 def pullCompleted():
     top = int(request.args.get('top'))
-    response = requests.get(f"http://{ORCHESTRATOR_IP}:5000/job/completed?top={top}")
+    response = requests.get(f"http://{QUEUE_IP}:5000/job/completed?top={top}")
     return Response(response=json.dumps(response.json()), status=200, mimetype='application/json')
 
 

@@ -3,7 +3,7 @@ import time
 import boto3
 from ec2_metadata import ec2_metadata
 import os
-from config import ORCHESTRATOR_IP, TIME_OUT, PORT, EXIT_FLAG
+from config import QUEUE_IP, TIME_OUT, PORT, EXIT_FLAG
 from datetime import datetime
 import logging
 
@@ -27,11 +27,11 @@ def main():
     while True:
         dif = datetime.utcnow() - start_time
         logging.info("Checking for available work")
-        request = requests.get(f'http://{ORCHESTRATOR_IP}:{PORT}/job/consume')
+        request = requests.get(f'http://{QUEUE_IP}:{PORT}/job/consume')
         workload = request.json()
         if workload:
             res = do_work(workload['data'], workload['iterations'])
-            requests.put(f"http://{ORCHESTRATOR_IP}:{PORT}/job/completed",
+            requests.put(f"http://{QUEUE_IP}:{PORT}/job/completed",
                          headers={"Content-Type": "application/json", 'Accept': 'application/json'},
                          json={'job_id': workload['job_id'], "result": str(res)})
             start_time = datetime.utcnow()

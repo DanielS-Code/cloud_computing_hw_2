@@ -12,7 +12,7 @@ IMG_TAG_VAL_1="dynamic-workload"
 PROJ_NAME="cloud_computing_hw_2"
 POLICY_PATH="file://EC2_Trust_Policy.json"
 
-ORCH_CONFIG="orchestrator/config.py"
+QUEUE_CONFIG="queue/config.py"
 API_CONFIG="api/config.py"
 
 MY_IP=$(curl --silent ipinfo.io/ip)
@@ -107,7 +107,7 @@ fi
 
 echo "Worker AMI ID:"$WORKER_AMI_ID
 
-### Deploy Orchestrator ###
+### Deploy Queue ###
 
 echo "Create IAM Role"
 aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document $POLICY_PATH
@@ -128,23 +128,23 @@ RUN_INSTANCES=$(aws ec2 run-instances   \
 
 INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
 
-echo "Waiting for orchestrator creation"
+echo "Waiting for queue creation"
 aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
-ORCHESTRATOR_PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
+QUEUE_PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID | jq -r '.Reservations[0].Instances[0].PublicIpAddress')
 
-echo "New instance $INSTANCE_ID @ $ORCHESTRATOR_PUBLIC_IP"
+echo "New instance $INSTANCE_ID @ $QUEUE_PUBLIC_IP"
 
 aws iam add-role-to-instance-profile --role-name $ROLE_NAME --instance-profile-name $ROLE_NAME | tr -d '"'
 
 echo "Associate IAM role to instance"
 aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=$ROLE_NAME | tr -d '"'
 
-echo "New end point - $INSTANCE_ID @ $ORCHESTRATOR_PUBLIC_IP"
+echo "New end point - $INSTANCE_ID @ $QUEUE_PUBLIC_IP"
 
-echo "Deploy orchestrator"
+echo "Deploy queue"
 
-ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
+ssh -i $KEY_PAIR_FILE ubuntu@$QUEUE_PUBLIC_IP -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=1500"  << EOF
 
     printf "update apt get\n"
     sudo apt-get update -y
@@ -163,20 +163,20 @@ ssh -i $KEY_PAIR_FILE ubuntu@$ORCHESTRATOR_PUBLIC_IP -o "StrictHostKeyChecking=n
 
     cd $PROJ_NAME
 
-    echo WORKER_AMI_ID = "'$WORKER_AMI_ID'" >> $ORCH_CONFIG
-    echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $ORCH_CONFIG
-    echo USER_REGION = "'$USER_REGION'" >> $ORCH_CONFIG
+    echo WORKER_AMI_ID = "'$WORKER_AMI_ID'" >> $QUEUE_CONFIG
+    echo QUEUE_IP = "'$QUEUE_PUBLIC_IP'" >> $QUEUE_CONFIG
+    echo USER_REGION = "'$USER_REGION'" >> $QUEUE_CONFIG
 
     printf "Install requirements\n"
-    pip3 install -r "orchestrator/requirements.txt"
+    pip3 install -r "queue/requirements.txt"
 
-    export FLASK_APP=orchestrator/app.py
+    export FLASK_APP=queue/app.py
     export PATH=/home/ubuntu/.local/bin:$PATH
     nohup flask run --host=0.0.0.0 &>/dev/null & exit
 
 EOF
 
-echo "Orchestrator Public IP:"$ORCHESTRATOR_PUBLIC_IP
+echo "Queue Public IP:"$QUEUE_PUBLIC_IP
 
 ### Deploy API 1 ###
 
@@ -219,7 +219,7 @@ ssh -i $KEY_PAIR_FILE ubuntu@$API_1_IP -o "StrictHostKeyChecking=no" -o "Connect
     echo "Install requirements"
     pip3 install -r "api/requirements.txt"
 
-    echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $API_CONFIG
+    echo QUEUE_IP = "'$QUEUE_PUBLIC_IP'" >> $API_CONFIG
 
     export FLASK_APP="api/app.py"
     export PATH=/home/ubuntu/.local/bin:$PATH
@@ -269,7 +269,7 @@ ssh -i $KEY_PAIR_FILE ubuntu@$API_2_IP -o "StrictHostKeyChecking=no" -o "Connect
     echo "Install requirements"
     pip3 install -r "api/requirements.txt"
 
-    echo ORCHESTRATOR_IP = "'$ORCHESTRATOR_PUBLIC_IP'" >> $API_CONFIG
+    echo QUEUE_IP = "'$QUEUE_PUBLIC_IP'" >> $API_CONFIG
 
     export FLASK_APP="api/app.py"
     export PATH=/home/ubuntu/.local/bin:$PATH

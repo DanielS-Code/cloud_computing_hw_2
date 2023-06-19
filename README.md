@@ -19,7 +19,7 @@ Our architecture contains 3 services:
 
 ### API Service 
 
-2 running instances responsible to transfer request from user to orchestrator service.
+2 running instances responsible to transfer request from user to queue service.
 
 #### Endpoints:
 
@@ -59,7 +59,7 @@ Example Response:
     }
 ]
 ```
-### Orchestration Service 
+### Queue Service 
 
 Processes all requests and scales workers to manage API load. MAX_TIME_IN_QUEUE - configures the maximal amount of time allowed to keep jobs in queue before scaling up.
 
@@ -77,7 +77,7 @@ Processes all requests and scales workers to manage API load. MAX_TIME_IN_QUEUE 
 
 
 This is the component responsible for the job itself. When we scale up the number of workers we can process more parallel jobs.
-The workers consume jobs, process them and send the result to orchestration service.
+The workers consume jobs, process them and send the result to queue service.
 When amount concurrent jobs decreases and workers are free we scale down to reduce number of workers.
 This auto up/down scaling allows us utilize cloud's flexability and common resources and by doing so saving money.
 
@@ -89,7 +89,7 @@ This auto up/down scaling allows us utilize cloud's flexability and common resou
 Run the "deploy.sh" script to deploy all instances.
 Make sure bash and AWS CLI exist on your machine.
 After instances are up, can validate using AWS console or AWS CLI, 
-You should have 4 running instances: 2 API's, 1 Orchestrator and 1 Worker.
+You should have 4 running instances: 2 API's, 1 queue and 1 Worker.
 When load increases the number of workers should increase as well while remaining the minimum of 1 worker.
 
 
@@ -97,11 +97,11 @@ When load increases the number of workers should increase as well while remainin
 ## Failure Modes
 
 ### Single Point of Failure
-Our orchestrator is a single point of failure. If for some reason this instance fails we won't be able to process new jobs.
+Our queue is a single point of failure. If for some reason this instance fails we won't be able to process new jobs.
 To mitigate this issue we would scale this service so if some instance fails there is always another one running.
 
 ### Disaster Recovery
-Our data is not persisted and kept in memory. In real production system we won't be able to recover data if the orchestrator fails or in case one worker fail during process.
+Our data is not persisted and kept in memory. In real production system we won't be able to recover data if the queue fails or in case one worker fail during process.
 Moreover, the deployment is across a single DS (depends on aws configuration), which exposes our services to DS disaster risk.
 To handle this issue we would deploy our services over multiple DS and would use a distributed DB to persist data.
 

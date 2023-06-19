@@ -4,11 +4,11 @@ from datetime import datetime
 import json
 import uuid
 import boto3
-from config import MAX_TIME_IN_QUEUE, INSTANCE_TYPE, WORKER_AMI_ID, ORCHESTRATOR_IP, USER_REGION
+from config import MAX_TIME_IN_QUEUE, INSTANCE_TYPE, WORKER_AMI_ID, QUEUE_IP, USER_REGION
 import threading as th
 import logging
 
-logging.basicConfig(filename='orchestrator/orchestrator.log',
+logging.basicConfig(filename='queue/queue.log',
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
@@ -85,7 +85,7 @@ def deploy_worker(app_path, exit_flag=True, min_count=1, max_count=1):
     user_data = f"""#!/bin/bash
     cd /home/ubuntu/cloud_computing_hw_2
     git pull > pull.log
-    echo ORCHESTRATOR_IP = \\\"{ORCHESTRATOR_IP}\\\" >> worker/config.py
+    echo QUEUE_IP = \\\"{QUEUE_IP}\\\" >> worker/config.py
     echo EXIT_FLAG = {exit_flag} >> worker/config.py
     export PATH=/usr/local/bin:$PATH
     python3 {app_path}"""
