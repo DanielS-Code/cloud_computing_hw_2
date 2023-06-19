@@ -23,7 +23,7 @@ def enqueue():
 @app.route('/pullCompleted', methods=['POST'])
 def pullCompleted():
     top = int(request.args.get('top'))
-    response = requests.post(f"http://{ORCHESTRATOR_IP}:5000/job/completed?top={top}")
+    response = requests.get(f"http://{ORCHESTRATOR_IP}:5000/job/completed?top={top}")
     return Response(response=json.dumps(response.json()), status=200, mimetype='application/json')
 
 

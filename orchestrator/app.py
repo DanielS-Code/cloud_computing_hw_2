@@ -59,7 +59,7 @@ def enqueue_new_job():
     return Response(response=json.dumps({'job_id': job_id}), status=200)
 
 
-@app.route('/job/completed', methods=['POST'])
+@app.route('/job/completed', methods=['GET'])
 def get_top_k_complete_jobs():
     top = int(request.args.get('top'))
     last_top_completed = memory.completed[:min(top, len(memory.completed))]
