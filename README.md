@@ -27,7 +27,7 @@ Our architecture contains 3 services:
 
 Send data to be processed by server.
 
-Example response:
+Example Response:
 
 ```json
 {
