@@ -16,6 +16,7 @@ Harel Damari 305792020
 Our architecture contains 3 services:
 
 ###API Service 
+
 2 running instances responsible to transfer request from user to orchestrator service.
 
 ####Endpoints:
@@ -56,6 +57,7 @@ Example Response:
 ]
 ```
 ### Orchestration Service 
+
 Processes all requests and scales workers to manage API load. MAX_TIME_IN_QUEUE - configures the maximal amount of time allowed to keep jobs in queue before scaling up.
 
 ####Endpoints:
@@ -68,6 +70,7 @@ Processes all requests and scales workers to manage API load. MAX_TIME_IN_QUEUE 
 **/job/consume (GET)** - Consume job from queue to be processed.
 
 ###Worker Service
+
 This is the component responsible for the job itself. When we scale up the number of workers we can process more parallel jobs.
 The workers consume jobs, process them and send the result to orchestration service.
 When amount concurrent jobs decreases and workers are free we scale down to reduce number of workers.
