@@ -3,7 +3,7 @@ import time
 import boto3
 from ec2_metadata import ec2_metadata
 import os
-from config import QUEUE_IP, TIME_OUT, PORT, EXIT_FLAG
+from config import PORT, EXIT_FLAG, QUEUE_IP, TIME_OUT
 from datetime import datetime
 import logging
 
@@ -14,7 +14,7 @@ logging.basicConfig(filename='worker/worker.log',
                     level=logging.DEBUG)
 
 
-def do_work(buffer, iterations):
+def perform_work(buffer, iterations):
     import hashlib
     output = hashlib.sha512(buffer.encode('utf-8')).digest()
     for i in range(iterations - 1):
@@ -25,18 +25,18 @@ def do_work(buffer, iterations):
 def main():
     start_time = datetime.utcnow()
     while True:
-        dif = datetime.utcnow() - start_time
+        diff = datetime.utcnow() - start_time
         logging.info("Checking for available work")
         request = requests.get(f'http://{QUEUE_IP}:{PORT}/job/consume')
         workload = request.json()
         if workload:
-            res = do_work(workload['data'], workload['iterations'])
+            output = perform_work(workload['data'], workload['iterations'])
             requests.put(f"http://{QUEUE_IP}:{PORT}/job/completed",
                          headers={"Content-Type": "application/json", 'Accept': 'application/json'},
-                         json={'job_id': workload['job_id'], "result": str(res)})
+                         json={'job_id': workload['job_id'], "result": str(output)})
             start_time = datetime.utcnow()
         else:
-            if dif.seconds > TIME_OUT and EXIT_FLAG:
+            if diff.seconds > TIME_OUT and EXIT_FLAG:
                 os.system('sudo shutdown -h now')
         time.sleep(1)
 
