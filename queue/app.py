@@ -62,7 +62,7 @@ def enqueue_new_job():
 @app.route('/job/completed', methods=['GET'])
 def get_top_k_complete_jobs():
     top = int(request.args.get('top'))
-    last_top_completed = memory.completed[:min(top, len(memory.completed))]
+    last_top_completed = memory.completed[-min(top, len(memory.completed)):]  # Test
     response = [completed_job.to_dict() for completed_job in last_top_completed]
     return Response(mimetype='application/json',
                     response=json.dumps(response, default=str),
@@ -116,7 +116,7 @@ def scale_up():
     lag = 0
     if memory.queue:
         lag = datetime.utcnow() - memory.queue[0].entry_time_utc
-    if lag > MAX_TIME_IN_QUEUE:
+    if lag.total_seconds() > MAX_TIME_IN_QUEUE:  # Test
         response = deploy_worker('worker/app.py')
         resource = boto3.resource('ec2', region_name=USER_REGION)
         instance = resource.Instance(id=response['Instances'][0]['InstanceId'])
