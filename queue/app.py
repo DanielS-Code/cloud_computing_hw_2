@@ -115,8 +115,8 @@ def get_work():
 def scale_up():
     lag = 0
     if memory.queue:
-        lag = datetime.utcnow() - memory.queue[0].entry_time_utc
-    if lag.total_seconds() > MAX_TIME_IN_QUEUE:  # Test
+        lag = (datetime.utcnow() - memory.queue[0].entry_time_utc).total_seconds()  # Test
+    if lag > MAX_TIME_IN_QUEUE:
         response = deploy_worker('worker/app.py')
         resource = boto3.resource('ec2', region_name=USER_REGION)
         instance = resource.Instance(id=response['Instances'][0]['InstanceId'])
