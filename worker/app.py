@@ -1,7 +1,5 @@
 import requests
 import time
-import boto3
-from ec2_metadata import ec2_metadata
 import os
 from config import PORT, EXIT_FLAG, QUEUE_IP, TIME_OUT
 from datetime import datetime
